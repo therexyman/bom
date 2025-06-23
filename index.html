@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book of Mormon Reader</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
+    header { background: #1a73e8; padding: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10; }
+    .nav { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .nav button { background: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+    #searchView, #browseView, #chapterView { padding: 1rem; display: none; }
+    #search { width: 100%; padding: 0.75rem; border: none; border-radius: 4px; font-size: 1rem; }
+    #count { margin-bottom: 1rem; color: #666; }
+    .verse { background: white; margin: 0.5rem 0; padding: 1rem; border-radius: 6px; }
+    .sticky-chapter-title {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 20;
+      font-size: 1.25em;
+      font-weight: bold;
+      padding: 0.7em 0.6em 0.4em 0.6em;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.07);
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <nav class="nav">
+    <button onclick="showView('search')">Search</button>
+    <button onclick="showView('browse')">Browse by Book</button>
+  </nav>
+</header>
+
+<div id="searchView">
+  <input id="search" placeholder="Search verses..." />
+  <div id="count"></div>
+  <div id="results"></div>
+</div>
+
+<div id="browseView">
+  <ul id="bookList"></ul>
+</div>
+
+<div id="chapterView">
+  <div id="stickyChapterTitle" class="sticky-chapter-title"></div>
+  <button onclick="showView('browse')">&larr; Back</button>
+  <div id="chapterContent"></div>
+</div>
+
+<script>
+let bomData = [];
+let books = [];
+let chaptersByBook = {};
+
+function fetchData() {
+  fetch('bomData.json')
+    .then(res => res.json())
+    .then(data => {
+      bomData = data;
+      buildBookChapterIndex();
+      showView('search');
+    });
+}
+
+function buildBookChapterIndex() {
+  books = [...new Set(bomData.map(v => v.Book))];
+  chaptersByBook = {};
+  for (let entry of bomData) {
+    if (!chaptersByBook[entry.Book]) chaptersByBook[entry.Book] = [];
+    if (!chaptersByBook[entry.Book].includes(entry.Chapter)) chaptersByBook[entry.Book].push(entry.Chapter);
+  }
+}
+
+function showView(view) {
+  document.getElementById('searchView').style.display = (view === 'search') ? 'block' : 'none';
+  document.getElementById('browseView').style.display = (view === 'browse') ? 'block' : 'none';
+  document.getElementById('chapterView').style.display = (view === 'chapter') ? 'block' : 'none';
+  document.querySelector('header').style.display = (view === 'chapter') ? 'none' : 'block';
+  document.getElementById('stickyChapterTitle').style.display = (view === 'chapter') ? 'block' : 'none';
+  if (view === 'browse') renderBookList();
+}
+
+function renderBookList() {
+  let bookList = document.getElementById('bookList');
+  bookList.innerHTML = '';
+  for (let book of books) {
+    let li = document.createElement('li');
+    li.innerHTML = `<strong>${book}</strong> - Chapters: ${
+      chaptersByBook[book].map(chNum =>
+        `<a href="#" onclick="showChapter('${book.replace(/'/g,"\\'")}',${chNum});return false;">${chNum}</a>`
+      ).join(', ')
+    }`;
+    bookList.appendChild(li);
+  }
+}
+
+function showChapter(book, chapter) {
+  showView('chapter');
+  document.getElementById('stickyChapterTitle').textContent = `${book} ${chapter}`;
+  let verses = bomData.filter(v => v.Book === book && v.Chapter === chapter);
+  let html = verses.map(v => `<div class="verse"><strong>${v.Verse}</strong> ${v.Text}</div>`).join('');
+  document.getElementById('chapterContent').innerHTML = html || '<div>No verses found.</div>';
+}
+
+document.getElementById('search').addEventListener('input', function() {
+  let query = this.value.trim().toLowerCase();
+  let results = bomData.filter(v => v.Text.toLowerCase().includes(query));
+  document.getElementById('count').textContent = query ? `${results.length} results` : '';
+  document.getElementById('results').innerHTML = results.map(v =>
+    `<div class="verse"><strong>${v.Book} ${v.Chapter}:${v.Verse}</strong> ${v.Text}</div>`
+  ).join('');
+});
+
+window.showView = showView;
+window.showChapter = showChapter;
+
+fetchData();
+</script>
+</body>
+</html>
