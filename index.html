@@ -1,124 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Book of Mormon Reader</title>
-  <style>
-    body { margin: 0; font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
-    header { background: #1a73e8; padding: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10; }
-    .nav { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-    .nav button { background: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
-    #searchView, #browseView, #chapterView { padding: 1rem; display: none; }
-    #search { width: 100%; padding: 0.75rem; border: none; border-radius: 4px; font-size: 1rem; }
-    #count { margin-bottom: 1rem; color: #666; }
-    .verse { background: white; margin: 0.5rem 0; padding: 1rem; border-radius: 6px; }
-    .sticky-chapter-title {
-      position: sticky;
-      top: 0;
-      background: #fff;
-      z-index: 20;
-      font-size: 1.25em;
-      font-weight: bold;
-      padding: 0.7em 0.6em 0.4em 0.6em;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.07);
-      text-align: center;
-      display: none;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Book of Mormon Search & Browse</title>
+<style>
+  body { margin: 0; font-family: Arial, sans-serif; background: #f0f2f5; color: #333; scroll-behavior: smooth; }
+  header { background: #1a73e8; padding: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10; }
+  .nav { display: flex; gap: 1rem; padding: 0.5rem; justify-content: center; flex-wrap: wrap; }
+  .nav button, select { background: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+  #searchView, #browseView, #chapterView { padding: 1rem; display: none; }
+  #search { width: 100%; padding: 0.75rem; border: none; border-radius: 4px; font-size: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 0.5rem; }
+  #count { margin-bottom: 1rem; color: #666; }
+  .verse { background: white; margin: 0.5rem 0; padding: 1rem; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); line-height: 1.5; }
+  .verse strong { color: #1a73e8; }
+  .highlight { background: #fff176; }
+  .book-list { padding-left: 0; list-style-type: none; }
+  .book-list > li { margin: 1rem 0; }
+  .chapter-list { padding-left: 0; list-style-type: none; column-count: 3; column-gap: 1rem; }
+  a { color: #1a73e8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .chapter-list a.active { font-weight: bold; color: #d32f2f; }
+  .chapter-nav { margin-top: 1rem; display: flex; justify-content: space-between; }
+  .to-top { text-align: center; margin-top: 1rem; }
+  #chapterTitle.sticky { position: sticky; top: 3rem; background: white; padding: 0.75rem 1rem; margin: 0; font-size: 1.2rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 5; }
+  :root {
+  --font-size: 11pt;
+  --bg: #f0f2f5;
+  --text: #222;
+  --nav-bg: #1a73e8;
+  --verse-bg: #fff;
+  --highlight: #fff176;
+  --link: #1a73e8;
+  --link-bg: #e3efff;
+  --shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+body, html {
+  font-size: var(--font-size);
+  background: var(--bg);
+  color: var(--text);
+}
+header {
+  background: var(--nav-bg);
+}
+.verse {
+  background: var(--verse-bg);
+  box-shadow: var(--shadow);
+}
+.chapter-list a {
+  color: var(--link);
+  background: var(--link-bg);
+}
+.highlight {
+  background: var(--highlight);
+}
+body.dark {
+  --bg: #181c22;
+  --text: #f3f5fa;
+  --nav-bg: #222633;
+  --verse-bg: #222633;
+  --highlight: #293d31;
+  --link: #9ccfff;
+  --link-bg: #354a5f;
+  --shadow: 0 1px 4px rgba(0,0,0,0.20);
+}
+body.dark .chapter-list a {
+  color: var(--link);
+  background: var(--link-bg);
+}
+body.dark .verse strong {
+  color: #80bfff;
+}
+body.dark #statusBar {
+  background: #23283a !important;
+  color: #e9efff !important;
+}
+#statusBar {
+  background: #d6eaff;
+  color: #134;
+  border-radius: 8px;
+  margin: 0.3em 0;
+}
+.chapter-list a {
+  min-width: 2.6em;
+  min-height: 2.2em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.15em 0.17em 0.15em 0;
+  border-radius: 1.6em;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  border: 1.5px solid transparent;
+  font-size: 1.08em;
+  font-weight: 600;
+  transition: background 0.12s, color 0.12s, border 0.12s;
+  background: var(--link-bg);
+  color: var(--link);
+  padding: 0.25em 0.7em;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.chapter-list a:a
+header {
+  background: var(--nav-bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  padding: 0.3em 0.4em 0.1em 0.4em;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.nav-row {
+  display: flex;
+  gap: 0.7em;
+  justify-content: center;
+  align-items: center;
+}
+.controls-row {
+  margin-top: 0.3em;
+}
+#statusBar {
+  margin: 0.12em 0 0.19em 0;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.99em;
+  padding: 0.33em 0.2em;
+  background: #d6eaff;
+  color: #134;
+  opacity: 0.95;
+}
+
+/* Mobile tweaks: stack everything and make touch targets big! */
+@media (max-width: 700px) {
+  .nav {
+    padding: 0.16em 0.08em 0.05em 0.08em;
+    gap: 0.17em;
+  }
+  .nav-row, .controls-row {
+    flex-direction: row;
+    gap: 0.4em;
+    justify-content: center;
+    align-items: center;
+  }
+  .nav-row button, .controls-row select, .controls-row button {
+    font-size: 1em;
+    padding: 0.6em 1.2em;
+    border-radius: 10px;
+    min-width: 44vw;
+    margin: 0.14em 0.05em;
+  }
+  .controls-row label {
+    min-width: 3em;
+    font-size: 1em;
+  }
+  #statusBar {
+    font-size: 1em;
+    padding: 0.35em 0.15em;
+    margin-bottom: 0.17em;
+  }
+}
+
+/* Super small screens: stack controls below nav buttons */
+@media (max-width: 480px) {
+  .nav-row {
+    flex-direction: column;
+    gap: 0.25em;
+  }
+  .controls-row {
+    flex-direction: column;
+    gap: 0.22em;
+  }
+  .nav-row button, .controls-row select, .controls-row button {
+    width: 96vw;
+    min-width: unset;
+    font-size: 1.01em;
+    margin: 0.11em 0;
+  }
+}
+
+</style>
 </head>
-<body>
 <header>
   <nav class="nav">
-    <button onclick="showView('search')">Search</button>
+    <button onclick="goToSearch()">Search</button>
     <button onclick="showView('browse')">Browse by Book</button>
   </nav>
+  <div id="chapterStatusBar" style="display:none"></div>
 </header>
 
-<div id="searchView">
-  <input id="search" placeholder="Search verses..." />
-  <div id="count"></div>
-  <div id="results"></div>
-</div>
+  
+</header>
 
-<div id="browseView">
-  <ul id="bookList"></ul>
-</div>
 
-<div id="chapterView">
-  <div id="stickyChapterTitle" class="sticky-chapter-title"></div>
-  <button onclick="showView('browse')">&larr; Back</button>
-  <div id="chapterContent"></div>
-</div>
+  <div id="searchView">
+    <input id="search" placeholder="Search verses..." />
+    <div id="count"></div>
+    <div id="results"></div>
+  </div>
+
+  <div id="browseView">
+    <ul class="book-list">
+      <li><strong>Title Page</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Title Page', 1); return false;">1</a></li></ul></li><li><strong>I Nephi</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('I Nephi', 0); return false;">0</a></li><li><a href='#' onclick="showChapter('I Nephi', 1); return false;">1</a></li><li><a href='#' onclick="showChapter('I Nephi', 2); return false;">2</a></li><li><a href='#' onclick="showChapter('I Nephi', 3); return false;">3</a></li><li><a href='#' onclick="showChapter('I Nephi', 4); return false;">4</a></li><li><a href='#' onclick="showChapter('I Nephi', 5); return false;">5</a></li><li><a href='#' onclick="showChapter('I Nephi', 6); return false;">6</a></li><li><a href='#' onclick="showChapter('I Nephi', 7); return false;">7</a></li><li><a href='#' onclick="showChapter('I Nephi', 8); return false;">8</a></li><li><a href='#' onclick="showChapter('I Nephi', 9); return false;">9</a></li><li><a href='#' onclick="showChapter('I Nephi', 10); return false;">10</a></li><li><a href='#' onclick="showChapter('I Nephi', 11); return false;">11</a></li><li><a href='#' onclick="showChapter('I Nephi', 12); return false;">12</a></li><li><a href='#' onclick="showChapter('I Nephi', 13); return false;">13</a></li><li><a href='#' onclick="showChapter('I Nephi', 14); return false;">14</a></li><li><a href='#' onclick="showChapter('I Nephi', 15); return false;">15</a></li><li><a href='#' onclick="showChapter('I Nephi', 16); return false;">16</a></li><li><a href='#' onclick="showChapter('I Nephi', 17); return false;">17</a></li><li><a href='#' onclick="showChapter('I Nephi', 18); return false;">18</a></li><li><a href='#' onclick="showChapter('I Nephi', 19); return false;">19</a></li><li><a href='#' onclick="showChapter('I Nephi', 20); return false;">20</a></li><li><a href='#' onclick="showChapter('I Nephi', 21); return false;">21</a></li><li><a href='#' onclick="showChapter('I Nephi', 22); return false;">22</a></li></ul></li><li><strong>II Nephi</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('II Nephi', 0); return false;">0</a></li><li><a href='#' onclick="showChapter('II Nephi', 1); return false;">1</a></li><li><a href='#' onclick="showChapter('II Nephi', 2); return false;">2</a></li><li><a href='#' onclick="showChapter('II Nephi', 3); return false;">3</a></li><li><a href='#' onclick="showChapter('II Nephi', 4); return false;">4</a></li><li><a href='#' onclick="showChapter('II Nephi', 5); return false;">5</a></li><li><a href='#' onclick="showChapter('II Nephi', 6); return false;">6</a></li><li><a href='#' onclick="showChapter('II Nephi', 7); return false;">7</a></li><li><a href='#' onclick="showChapter('II Nephi', 8); return false;">8</a></li><li><a href='#' onclick="showChapter('II Nephi', 9); return false;">9</a></li><li><a href='#' onclick="showChapter('II Nephi', 10); return false;">10</a></li><li><a href='#' onclick="showChapter('II Nephi', 11); return false;">11</a></li><li><a href='#' onclick="showChapter('II Nephi', 12); return false;">12</a></li><li><a href='#' onclick="showChapter('II Nephi', 13); return false;">13</a></li><li><a href='#' onclick="showChapter('II Nephi', 14); return false;">14</a></li><li><a href='#' onclick="showChapter('II Nephi', 15); return false;">15</a></li><li><a href='#' onclick="showChapter('II Nephi', 16); return false;">16</a></li><li><a href='#' onclick="showChapter('II Nephi', 17); return false;">17</a></li><li><a href='#' onclick="showChapter('II Nephi', 18); return false;">18</a></li><li><a href='#' onclick="showChapter('II Nephi', 19); return false;">19</a></li><li><a href='#' onclick="showChapter('II Nephi', 20); return false;">20</a></li><li><a href='#' onclick="showChapter('II Nephi', 21); return false;">21</a></li><li><a href='#' onclick="showChapter('II Nephi', 22); return false;">22</a></li><li><a href='#' onclick="showChapter('II Nephi', 23); return false;">23</a></li><li><a href='#' onclick="showChapter('II Nephi', 24); return false;">24</a></li><li><a href='#' onclick="showChapter('II Nephi', 25); return false;">25</a></li><li><a href='#' onclick="showChapter('II Nephi', 26); return false;">26</a></li><li><a href='#' onclick="showChapter('II Nephi', 27); return false;">27</a></li><li><a href='#' onclick="showChapter('II Nephi', 28); return false;">28</a></li><li><a href='#' onclick="showChapter('II Nephi', 29); return false;">29</a></li><li><a href='#' onclick="showChapter('II Nephi', 30); return false;">30</a></li><li><a href='#' onclick="showChapter('II Nephi', 31); return false;">31</a></li><li><a href='#' onclick="showChapter('II Nephi', 32); return false;">32</a></li><li><a href='#' onclick="showChapter('II Nephi', 33); return false;">33</a></li></ul></li><li><strong>Jacob</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Jacob', 0); return false;">0</a></li><li><a href='#' onclick="showChapter('Jacob', 1); return false;">1</a></li><li><a href='#' onclick="showChapter('Jacob', 2); return false;">2</a></li><li><a href='#' onclick="showChapter('Jacob', 3); return false;">3</a></li><li><a href='#' onclick="showChapter('Jacob', 4); return false;">4</a></li><li><a href='#' onclick="showChapter('Jacob', 5); return false;">5</a></li><li><a href='#' onclick="showChapter('Jacob', 6); return false;">6</a></li><li><a href='#' onclick="showChapter('Jacob', 7); return false;">7</a></li></ul></li><li><strong>Enos</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Enos', 1); return false;">1</a></li></ul></li><li><strong>Jarom</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Jarom', 1); return false;">1</a></li></ul></li><li><strong>Omni</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Omni', 1); return false;">1</a></li></ul></li><li><strong>Words of Mormon</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Words of Mormon', 1); return false;">1</a></li></ul></li><li><strong>Mosiah</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Mosiah', 1); return false;">1</a></li><li><a href='#' onclick="showChapter('Mosiah', 2); return false;">2</a></li><li><a href='#' onclick="showChapter('Mosiah', 3); return false;">3</a></li><li><a href='#' onclick="showChapter('Mosiah', 4); return false;">4</a></li><li><a href='#' onclick="showChapter('Mosiah', 5); return false;">5</a></li><li><a href='#' onclick="showChapter('Mosiah', 6); return false;">6</a></li><li><a href='#' onclick="showChapter('Mosiah', 7); return false;">7</a></li><li><a href='#' onclick="showChapter('Mosiah', 8); return false;">8</a></li><li><a href='#' onclick="showChapter('Mosiah', 9); return false;">9</a></li><li><a href='#' onclick="showChapter('Mosiah', 10); return false;">10</a></li><li><a href='#' onclick="showChapter('Mosiah', 11); return false;">11</a></li><li><a href='#' onclick="showChapter('Mosiah', 12); return false;">12</a></li><li><a href='#' onclick="showChapter('Mosiah', 13); return false;">13</a></li><li><a href='#' onclick="showChapter('Mosiah', 14); return false;">14</a></li><li><a href='#' onclick="showChapter('Mosiah', 15); return false;">15</a></li><li><a href='#' onclick="showChapter('Mosiah', 16); return false;">16</a></li><li><a href='#' onclick="showChapter('Mosiah', 17); return false;">17</a></li><li><a href='#' onclick="showChapter('Mosiah', 18); return false;">18</a></li><li><a href='#' onclick="showChapter('Mosiah', 19); return false;">19</a></li><li><a href='#' onclick="showChapter('Mosiah', 20); return false;">20</a></li><li><a href='#' onclick="showChapter('Mosiah', 21); return false;">21</a></li><li><a href='#' onclick="showChapter('Mosiah', 22); return false;">22</a></li><li><a href='#' onclick="showChapter('Mosiah', 23); return false;">23</a></li><li><a href='#' onclick="showChapter('Mosiah', 24); return false;">24</a></li><li><a href='#' onclick="showChapter('Mosiah', 25); return false;">25</a></li><li><a href='#' onclick="showChapter('Mosiah', 26); return false;">26</a></li><li><a href='#' onclick="showChapter('Mosiah', 27); return false;">27</a></li><li><a href='#' onclick="showChapter('Mosiah', 28); return false;">28</a></li><li><a href='#' onclick="showChapter('Mosiah', 29); return false;">29</a></li></ul></li><li><strong>Alma</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Alma', 0); return false;">0</a></li><li><a href='#' onclick="showChapter('Alma', 1); return false;">1</a></li><li><a href='#' onclick="showChapter('Alma', 2); return false;">2</a></li><li><a href='#' onclick="showChapter('Alma', 3); return false;">3</a></li><li><a href='#' onclick="showChapter('Alma', 4); return false;">4</a></li><li><a href='#' onclick="showChapter('Alma', 5); return false;">5</a></li><li><a href='#' onclick="showChapter('Alma', 6); return false;">6</a></li><li><a href='#' onclick="showChapter('Alma', 7); return false;">7</a></li><li><a href='#' onclick="showChapter('Alma', 8); return false;">8</a></li><li><a href='#' onclick="showChapter('Alma', 9); return false;">9</a></li><li><a href='#' onclick="showChapter('Alma', 10); return false;">10</a></li><li><a href='#' onclick="showChapter('Alma', 11); return false;">11</a></li><li><a href='#' onclick="showChapter('Alma', 12); return false;">12</a></li><li><a href='#' onclick="showChapter('Alma', 13); return false;">13</a></li><li><a href='#' onclick="showChapter('Alma', 14); return false;">14</a></li><li><a href='#' onclick="showChapter('Alma', 15); return false;">15</a></li><li><a href='#' onclick="showChapter('Alma', 16); return false;">16</a></li><li><a href='#' onclick="showChapter('Alma', 17); return false;">17</a></li><li><a href='#' onclick="showChapter('Alma', 18); return false;">18</a></li><li><a href='#' onclick="showChapter('Alma', 19); return false;">19</a></li><li><a href='#' onclick="showChapter('Alma', 20); return false;">20</a></li><li><a href='#' onclick="showChapter('Alma', 21); return false;">21</a></li><li><a href='#' onclick="showChapter('Alma', 22); return false;">22</a></li><li><a href='#' onclick="showChapter('Alma', 23); return false;">23</a></li><li><a href='#' onclick="showChapter('Alma', 24); return false;">24</a></li><li><a href='#' onclick="showChapter('Alma', 25); return false;">25</a></li><li><a href='#' onclick="showChapter('Alma', 26); return false;">26</a></li><li><a href='#' onclick="showChapter('Alma', 27); return false;">27</a></li><li><a href='#' onclick="showChapter('Alma', 28); return false;">28</a></li><li><a href='#' onclick="showChapter('Alma', 29); return false;">29</a></li><li><a href='#' onclick="showChapter('Alma', 30); return false;">30</a></li><li><a href='#' onclick="showChapter('Alma', 31); return false;">31</a></li><li><a href='#' onclick="showChapter('Alma', 32); return false;">32</a></li><li><a href='#' onclick="showChapter('Alma', 33); return false;">33</a></li><li><a href='#' onclick="showChapter('Alma', 34); return false;">34</a></li><li><a href='#' onclick="showChapter('Alma', 35); return false;">35</a></li><li><a href='#' onclick="showChapter('Alma', 36); return false;">36</a></li><li><a href='#' onclick="showChapter('Alma', 37); return false;">37</a></li><li><a href='#' onclick="showChapter('Alma', 38); return false;">38</a></li><li><a href='#' onclick="showChapter('Alma', 39); return false;">39</a></li><li><a href='#' onclick="showChapter('Alma', 40); return false;">40</a></li><li><a href='#' onclick="showChapter('Alma', 41); return false;">41</a></li><li><a href='#' onclick="showChapter('Alma', 42); return false;">42</a></li><li><a href='#' onclick="showChapter('Alma', 43); return false;">43</a></li><li><a href='#' onclick="showChapter('Alma', 44); return false;">44</a></li><li><a href='#' onclick="showChapter('Alma', 45); return false;">45</a></li><li><a href='#' onclick="showChapter('Alma', 46); return false;">46</a></li><li><a href='#' onclick="showChapter('Alma', 47); return false;">47</a></li><li><a href='#' onclick="showChapter('Alma', 48); return false;">48</a></li><li><a href='#' onclick="showChapter('Alma', 49); return false;">49</a></li><li><a href='#' onclick="showChapter('Alma', 50); return false;">50</a></li><li><a href='#' onclick="showChapter('Alma', 51); return false;">51</a></li><li><a href='#' onclick="showChapter('Alma', 52); return false;">52</a></li><li><a href='#' onclick="showChapter('Alma', 53); return false;">53</a></li><li><a href='#' onclick="showChapter('Alma', 54); return false;">54</a></li><li><a href='#' onclick="showChapter('Alma', 55); return false;">55</a></li><li><a href='#' onclick="showChapter('Alma', 56); return false;">56</a></li><li><a href='#' onclick="showChapter('Alma', 57); return false;">57</a></li><li><a href='#' onclick="showChapter('Alma', 58); return false;">58</a></li><li><a href='#' onclick="showChapter('Alma', 59); return false;">59</a></li><li><a href='#' onclick="showChapter('Alma', 60); return false;">60</a></li><li><a href='#' onclick="showChapter('Alma', 61); return false;">61</a></li><li><a href='#' onclick="showChapter('Alma', 62); return false;">62</a></li><li><a href='#' onclick="showChapter('Alma', 63); return false;">63</a></li></ul></li><li><strong>Helaman</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Helaman', 1); return false;">1</a></li><li><a href='#' onclick="showChapter('Helaman', 2); return false;">2</a></li><li><a href='#' onclick="showChapter('Helaman', 3); return false;">3</a></li><li><a href='#' onclick="showChapter('Helaman', 4); return false;">4</a></li><li><a href='#' onclick="showChapter('Helaman', 5); return false;">5</a></li><li><a href='#' onclick="showChapter('Helaman', 6); return false;">6</a></li><li><a href='#' onclick="showChapter('Helaman', 7); return false;">7</a></li><li><a href='#' onclick="showChapter('Helaman', 8); return false;">8</a></li><li><a href='#' onclick="showChapter('Helaman', 9); return false;">9</a></li><li><a href='#' onclick="showChapter('Helaman', 10); return false;">10</a></li><li><a href='#' onclick="showChapter('Helaman', 11); return false;">11</a></li><li><a href='#' onclick="showChapter('Helaman', 12); return false;">12</a></li><li><a href='#' onclick="showChapter('Helaman', 13); return false;">13</a></li><li><a href='#' onclick="showChapter('Helaman', 14); return false;">14</a></li><li><a href='#' onclick="showChapter('Helaman', 15); return false;">15</a></li><li><a href='#' onclick="showChapter('Helaman', 16); return false;">16</a></li></ul></li><li><strong>3 Nephi</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('3 Nephi', 1); return false;">1</a></li><li><a href='#' onclick="showChapter('3 Nephi', 2); return false;">2</a></li><li><a href='#' onclick="showChapter('3 Nephi', 3); return false;">3</a></li><li><a href='#' onclick="showChapter('3 Nephi', 4); return false;">4</a></li><li><a href='#' onclick="showChapter('3 Nephi', 5); return false;">5</a></li><li><a href='#' onclick="showChapter('3 Nephi', 6); return false;">6</a></li><li><a href='#' onclick="showChapter('3 Nephi', 7); return false;">7</a></li><li><a href='#' onclick="showChapter('3 Nephi', 8); return false;">8</a></li><li><a href='#' onclick="showChapter('3 Nephi', 9); return false;">9</a></li><li><a href='#' onclick="showChapter('3 Nephi', 10); return false;">10</a></li><li><a href='#' onclick="showChapter('3 Nephi', 11); return false;">11</a></li><li><a href='#' onclick="showChapter('3 Nephi', 12); return false;">12</a></li><li><a href='#' onclick="showChapter('3 Nephi', 13); return false;">13</a></li><li><a href='#' onclick="showChapter('3 Nephi', 14); return false;">14</a></li><li><a href='#' onclick="showChapter('3 Nephi', 15); return false;">15</a></li><li><a href='#' onclick="showChapter('3 Nephi', 16); return false;">16</a></li><li><a href='#' onclick="showChapter('3 Nephi', 17); return false;">17</a></li><li><a href='#' onclick="showChapter('3 Nephi', 18); return false;">18</a></li><li><a href='#' onclick="showChapter('3 Nephi', 19); return false;">19</a></li><li><a href='#' onclick="showChapter('3 Nephi', 20); return false;">20</a></li><li><a href='#' onclick="showChapter('3 Nephi', 21); return false;">21</a></li><li><a href='#' onclick="showChapter('3 Nephi', 22); return false;">22</a></li><li><a href='#' onclick="showChapter('3 Nephi', 23); return false;">23</a></li><li><a href='#' onclick="showChapter('3 Nephi', 24); return false;">24</a></li><li><a href='#' onclick="showChapter('3 Nephi', 25); return false;">25</a></li><li><a href='#' onclick="showChapter('3 Nephi', 26); return false;">26</a></li><li><a href='#' onclick="showChapter('3 Nephi', 27); return false;">27</a></li><li><a href='#' onclick="showChapter('3 Nephi', 28); return false;">28</a></li><li><a href='#' onclick="showChapter('3 Nephi', 29); return false;">29</a></li><li><a href='#' onclick="showChapter('3 Nephi', 30); return false;">30</a></li></ul></li><li><strong>4 Nephi</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('4 Nephi', 1); return false;">1</a></li></ul></li><li><strong>Mormon</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Mormon', 1); return false;">1</a></li><li><a href='#' onclick="showChapter('Mormon', 2); return false;">2</a></li><li><a href='#' onclick="showChapter('Mormon', 3); return false;">3</a></li><li><a href='#' onclick="showChapter('Mormon', 4); return false;">4</a></li><li><a href='#' onclick="showChapter('Mormon', 5); return false;">5</a></li><li><a href='#' onclick="showChapter('Mormon', 6); return false;">6</a></li><li><a href='#' onclick="showChapter('Mormon', 7); return false;">7</a></li><li><a href='#' onclick="showChapter('Mormon', 8); return false;">8</a></li><li><a href='#' onclick="showChapter('Mormon', 9); return false;">9</a></li></ul></li><li><strong>Ether</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Ether', 1); return false;">1</a></li><li><a href='#' onclick="showChapter('Ether', 2); return false;">2</a></li><li><a href='#' onclick="showChapter('Ether', 3); return false;">3</a></li><li><a href='#' onclick="showChapter('Ether', 4); return false;">4</a></li><li><a href='#' onclick="showChapter('Ether', 5); return false;">5</a></li><li><a href='#' onclick="showChapter('Ether', 6); return false;">6</a></li><li><a href='#' onclick="showChapter('Ether', 7); return false;">7</a></li><li><a href='#' onclick="showChapter('Ether', 8); return false;">8</a></li><li><a href='#' onclick="showChapter('Ether', 9); return false;">9</a></li><li><a href='#' onclick="showChapter('Ether', 10); return false;">10</a></li><li><a href='#' onclick="showChapter('Ether', 11); return false;">11</a></li><li><a href='#' onclick="showChapter('Ether', 12); return false;">12</a></li><li><a href='#' onclick="showChapter('Ether', 13); return false;">13</a></li><li><a href='#' onclick="showChapter('Ether', 14); return false;">14</a></li><li><a href='#' onclick="showChapter('Ether', 15); return false;">15</a></li></ul></li><li><strong>Moroni</strong><ul class='chapter-list three-cols'><li><a href='#' onclick="showChapter('Moroni', 1); return false;">1</a></li><li><a href='#' onclick="showChapter('Moroni', 2); return false;">2</a></li><li><a href='#' onclick="showChapter('Moroni', 3); return false;">3</a></li><li><a href='#' onclick="showChapter('Moroni', 4); return false;">4</a></li><li><a href='#' onclick="showChapter('Moroni', 5); return false;">5</a></li><li><a href='#' onclick="showChapter('Moroni', 6); return false;">6</a></li><li><a href='#' onclick="showChapter('Moroni', 7); return false;">7</a></li><li><a href='#' onclick="showChapter('Moroni', 8); return false;">8</a></li><li><a href='#' onclick="showChapter('Moroni', 9); return false;">9</a></li><li><a href='#' onclick="showChapter('Moroni', 10); return false;">10</a></li></ul></li>
+    </ul>
+  </div>
+
+  <div id="chapterView">
+    <button onclick="showView('browse')">&larr; Back</button>
+    <h2 id="chapterTitle"></h2>
+    <div id="chapterContent"></div>
+    <div class="chapter-nav">
+      <button id="prevChapter" onclick="prevChapter()">← Previous</button>
+      <button id="nextChapter" onclick="nextChapter()">Next →</button>
+    </div>
+    <div class="to-top"><a href="#top" onclick="scrollToTop()">Back to top</a></div>
+  </div>
+
+  
 
 <script>
-let bomData = [];
-let books = [];
-let chaptersByBook = {};
-
-function fetchData() {
-  fetch('bomData.json')
-    .then(res => res.json())
-    .then(data => {
-      bomData = data;
-      buildBookChapterIndex();
-      showView('search');
-    });
-}
-
-function buildBookChapterIndex() {
-  books = [...new Set(bomData.map(v => v.Book))];
-  chaptersByBook = {};
-  for (let entry of bomData) {
-    if (!chaptersByBook[entry.Book]) chaptersByBook[entry.Book] = [];
-    if (!chaptersByBook[entry.Book].includes(entry.Chapter)) chaptersByBook[entry.Book].push(entry.Chapter);
-  }
-}
-
-function showView(view) {
-  document.getElementById('searchView').style.display = (view === 'search') ? 'block' : 'none';
-  document.getElementById('browseView').style.display = (view === 'browse') ? 'block' : 'none';
-  document.getElementById('chapterView').style.display = (view === 'chapter') ? 'block' : 'none';
-  document.querySelector('header').style.display = (view === 'chapter') ? 'none' : 'block';
-  document.getElementById('stickyChapterTitle').style.display = (view === 'chapter') ? 'block' : 'none';
-  if (view === 'browse') renderBookList();
-}
-
-function renderBookList() {
-  let bookList = document.getElementById('bookList');
-  bookList.innerHTML = '';
-  for (let book of books) {
-    let li = document.createElement('li');
-    li.innerHTML = `<strong>${book}</strong> - Chapters: ${
-      chaptersByBook[book].map(chNum =>
-        `<a href="#" onclick="showChapter('${book.replace(/'/g,"\\'")}',${chNum});return false;">${chNum}</a>`
-      ).join(', ')
-    }`;
-    bookList.appendChild(li);
-  }
-}
-
-function showChapter(book, chapter) {
-  showView('chapter');
-  document.getElementById('stickyChapterTitle').textContent = `${book} ${chapter}`;
-  let verses = bomData.filter(v => v.Book === book && v.Chapter === chapter);
-  let html = verses.map(v => `<div class="verse"><strong>${v.Verse}</strong> ${v.Text}</div>`).join('');
-  document.getElementById('chapterContent').innerHTML = html || '<div>No verses found.</div>';
-}
-
-document.getElementById('search').addEventListener('input', function() {
-  let query = this.value.trim().toLowerCase();
-  let results = bomData.filter(v => v.Text.toLowerCase().includes(query));
-  document.getElementById('count').textContent = query ? `${results.length} results` : '';
-  document.getElementById('results').innerHTML = results.map(v =>
-    `<div class="verse"><strong>${v.Book} ${v.Chapter}:${v.Verse}</strong> ${v.Text}</div>`
-  ).join('');
-});
-
-window.showView = showView;
-window.showChapter = showChapter;
-
-fetchData();
+fetch('bomData.json')
+  .then(response => response.json())
+  .then(data => {
+    window.bomData = data;
+    if (typeof initializeApp === 'function') {
+      initializeApp();
+    }
+  });
 </script>
 </body>
 </html>
